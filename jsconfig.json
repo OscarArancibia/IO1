@@ -16,6 +16,6 @@
       "scripthost"
     ]
   },
-    "include": ["src/**/*.ts", "src/**/*.vue", "src/utils/graphs/Recta.js"],
+    "include": ["src/**/*.ts", "src/**/*.vue", "src/utils/graphs/Recta.js", "src/utils/graphs/PuntoRegion.js"],
     "exclude": ["node_modules"]
 }

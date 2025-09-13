@@ -1,128 +1,190 @@
 export class Recta {
-  constructor(plano, config) {
-    this.plano = plano;
-    this.config = {
-      color: config.color || '#007bff',
-      label: config.label || '',
-      coeficienteX: config.coeficienteX || 0,
-      coeficienteY: config.coeficienteY || 0,
-      terminoIndependiente: config.terminoIndependiente
-    };
-  }
+    constructor(plano, config = {}) {
+        const defaultConfig = {
+            color: '#ff0000',
+            puntos: [],
+            grosor: 2
+        };
 
-  dibujar(x,y) {
-    // Si se proporciona x pero no y, asumir y=0
-                if (x !== undefined && y === undefined) {
-                    y = 0;
-                }
-                // Si se proporciona y pero no x, asumir x=0
-                else if (y !== undefined && x === undefined) {
-                    x = 0;
-                }
+        this.config = { ...defaultConfig, ...config };
+
+ 
+        this.plano = plano;
+        this.color = this.config.color;
+        this.puntos = this.config.puntos;
+        this.grosor = this.config.grosor;
+        
+        // Validar que tenemos un plano
+        if (this.plano) {
+            this.contexto = this.plano.getContext();
+            this.limites = this.plano.getLimites();
+        } else {
+            console.warn('Recta necesita un plano');
+            this.contexto = null;
+            this.limites = null;
+        }
+    }
+
+    // Método para dibujar todas las rectas del array
+    dibujar() {
+        if (!this.contexto || !Array.isArray(this.puntos) || !this.limites) return;
+
+        this.contexto.save();
+        
+        this.contexto.strokeStyle = this.color;
+        this.contexto.lineWidth = this.grosor;
+        this.contexto.setLineDash([]);
+
+    
+        for (let i = 0; i < this.puntos.length; i += 2) {
+            if (i + 1 >= this.puntos.length) break;
+
+            const punto1 = this.puntos[i];
+            const punto2 = this.puntos[i + 1];
+
+            
+            const puntosCorte = this.calcularPuntosCorte(punto1, punto2);
+            
+            if (puntosCorte.length === 2) {
+                this.dibujarSegmento(puntosCorte[0], puntosCorte[1]);
+            } else {
+                const p1Dentro = this.puntoDentroDelPlano(punto1);
+                const p2Dentro = this.puntoDentroDelPlano(punto2);
                 
-                // Si se proporcionan ambos parámetros, actualizar la ecuación de la recta
-                if (x !== undefined && y !== undefined) {
-                    // Calcular nuevos coeficientes basados en los puntos proporcionados
-                    // Esto es una simplificación para la demostración
-                    this.config.coeficienteX = y;
-                    this.config.coeficienteY = -x;
-                    this.config.terminoIndependiente = y * x - x * y;
+                if (p1Dentro && p2Dentro) {
+                    this.dibujarSegmento(punto1, punto2);
                 }
-                
-                const ctx = this.plano.getContext();
-                const { minX, maxX, minY, maxY } = this.getPlanoRange();
+            }
+        }
 
-                // Calcular los puntos donde la recta intersecta los bordes del plano
-                const puntos = this.calcularPuntosInterseccionBordes(minX, maxX, minY, maxY);
-
-                if (puntos.length >= 2) {
-                    // Ordenar puntos por X para dibujar de izquierda a derecha
-                    puntos.sort((a, b) => a.x - b.x);
-                    
-                    const p1 = this.plano.CoordenadasACanvas(puntos[0].x, puntos[0].y);
-                    const p2 = this.plano.CoordenadasACanvas(puntos[1].x, puntos[1].y);
-
-                    ctx.strokeStyle = this.config.color;
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([]);
-
-                    // Dibujar la línea que cruza todo el plano
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.stroke();
-
-                    // Dibujar etiqueta
-                    if (this.config.label) {
-                        ctx.fillStyle = this.config.color;
-                        ctx.font = '14px Arial';
-                        const midX = (p1.x + p2.x) / 2;
-                        const midY = (p1.y + p2.y) / 2;
-                        ctx.fillText(this.config.label, midX + 10, midY - 10);
-                    }
-                }
-   }
-
-
-  getPlanoRange() {
-    const limites = this.plano.getLimites();
-    return {
-      minX: limites.minX,
-      maxX: limites.maxX,
-      minY: limites.minY,
-      maxY: limites.maxY
-    };
-  }
-
-  calcularPuntosInterseccionBordes(minX, maxX, minY, maxY) {
-    const { coeficienteX, coeficienteY, terminoIndependiente } = this.config;
-    const puntos = [];
-
-    // Calcular intersecciones con los 4 bordes del plano
-
-    // Intersección con borde IZQUIERDO (x = minX)
-    if (coeficienteY !== 0) {
-      const yLeft = (terminoIndependiente - coeficienteX * minX) / coeficienteY;
-      if (yLeft >= minY && yLeft <= maxY) {
-        puntos.push({ x: minX, y: yLeft });
-      }
+        this.contexto.restore();
     }
 
-    // Intersección con borde DERECHO (x = maxX)
-    if (coeficienteY !== 0) {
-      const yRight = (terminoIndependiente - coeficienteX * maxX) / coeficienteY;
-      if (yRight >= minY && yRight <= maxY) {
-        puntos.push({ x: maxX, y: yRight });
-      }
+    // Dibujar un segmento entre dos puntos matemáticos
+    dibujarSegmento(p1Mat, p2Mat) {
+        const p1Canvas = this.plano.CoordenadasACanvas(p1Mat.x, p1Mat.y);
+        const p2Canvas = this.plano.CoordenadasACanvas(p2Mat.x, p2Mat.y);
+        
+        this.contexto.beginPath();
+        this.contexto.moveTo(p1Canvas.x, p1Canvas.y);
+        this.contexto.lineTo(p2Canvas.x, p2Canvas.y);
+        this.contexto.stroke();
     }
 
-    // Intersección con borde INFERIOR (y = minY)
-    if (coeficienteX !== 0) {
-      const xBottom = (terminoIndependiente - coeficienteY * minY) / coeficienteX;
-      if (xBottom >= minX && xBottom <= maxX) {
-        puntos.push({ x: xBottom, y: minY });
-      }
+    // Calcular dónde la recta corta los límites del plano
+    calcularPuntosCorte(p1, p2) {
+        const puntosCorte = [];
+        
+    
+        const { minX, maxX, minY, maxY } = this.limites;
+
+        
+        const intersecciones = [
+            this.calcularInterseccionConBordeVertical(p1, p2, minX), 
+            this.calcularInterseccionConBordeVertical(p1, p2, maxX), 
+            this.calcularInterseccionConBordeHorizontal(p1, p2, minY),
+            this.calcularInterseccionConBordeHorizontal(p1, p2, maxY) 
+        ];
+
+        intersecciones.forEach(interseccion => {
+            if (interseccion && this.puntoDentroDelPlano(interseccion)) {
+                puntosCorte.push(interseccion);
+            }
+        });
+
+        return this.filtrarPuntosUnicos(puntosCorte);
     }
 
-    // Intersección con borde SUPERIOR (y = maxY)
-    if (coeficienteX !== 0) {
-      const xTop = (terminoIndependiente - coeficienteY * maxY) / coeficienteX;
-      if (xTop >= minX && xTop <= maxX) {
-        puntos.push({ x: xTop, y: maxY });
-      }
+    // Calcular intersección con borde vertical (x)
+    calcularInterseccionConBordeVertical(p1, p2, xBorde) {
+        if (p1.x === p2.x) {
+            if (p1.x === xBorde) {
+                return {
+                    x: xBorde,
+                    y: Math.max(Math.min(p1.y, p2.y), this.limites.minY)
+                };
+            }
+            return null;
+        }
+
+        // Pendiente
+        const m = (p2.y - p1.y) / (p2.x - p1.x);
+
+        const y = p1.y + m * (xBorde - p1.x);
+        
+        return { x: xBorde, y: y };
     }
 
-    // Eliminar duplicados y asegurar 2 puntos exactos
-    const puntosUnicos = puntos.filter((p, index, array) => 
-      array.findIndex(pp => Math.abs(pp.x - p.x) < 0.001 && Math.abs(pp.y - p.y) < 0.001) === index
-    );
 
-    // Si tenemos más de 2 puntos, tomar los 2 más extremos
-    if (puntosUnicos.length > 2) {
-      puntosUnicos.sort((a, b) => a.x - b.x);
-      return [puntosUnicos[0], puntosUnicos[puntosUnicos.length - 1]];
+
+    // Calcular intersección con borde horizontal (y)
+    calcularInterseccionConBordeHorizontal(p1, p2, yBorde) {
+        // Recta horizontal
+        if (p1.y === p2.y) {
+            if (p1.y === yBorde) {
+                // La recta coincide con el borde horizontal
+                return {
+                    x: Math.max(Math.min(p1.x, p2.x), this.limites.minX),
+                    y: yBorde
+                };
+            }
+            return null;
+        }
+
+        // Pendiente
+        const m = (p2.y - p1.y) / (p2.x - p1.x);
+        
+        
+        const x = p1.x + (yBorde - p1.y) / m;
+        
+        return { x: x, y: yBorde };
     }
 
-    return puntosUnicos.slice(0, 2);
-  }
+
+    puntoDentroDelPlano(punto) {
+        return punto.x >= this.limites.minX && punto.x <= this.limites.maxX &&
+               punto.y >= this.limites.minY && punto.y <= this.limites.maxY;
+    }
+
+
+    filtrarPuntosUnicos(puntos) {
+        const unicos = [];
+        const visto = new Set();
+
+        for (const punto of puntos) {
+            const clave = `${punto.x.toFixed(6)},${punto.y.toFixed(6)}`;
+            if (!visto.has(clave)) {
+                visto.add(clave);
+                unicos.push(punto);
+            }
+        }
+        return unicos;
+    }
+
+    // Métodos de actualización
+    actualizarConfig(nuevaConfig) {
+        this.config = { ...this.config, ...nuevaConfig };
+        this.color = this.config.color;
+        this.puntos = this.config.puntos;
+        this.grosor = this.config.grosor;
+        return this;
+    }
+
+    agregarPuntos(nuevosPuntos) {
+        this.puntos = [...this.puntos, ...nuevosPuntos];
+        this.config.puntos = this.puntos;
+        return this;
+    }
+
+    limpiarPuntos() {
+        this.puntos = [];
+        this.config.puntos = [];
+        return this;
+    }
+
+    cambiarColor(nuevoColor) {
+        this.color = nuevoColor;
+        this.config.color = nuevoColor;
+        return this;
+    }
 }

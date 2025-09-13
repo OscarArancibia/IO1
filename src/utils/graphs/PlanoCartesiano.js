@@ -3,7 +3,6 @@ export class PlanoCartesiano {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     
-    // Configuración con valores por defecto
     this.config = {
       minX: config.minX || 0,
       minY: config.minY || 0,
@@ -19,7 +18,6 @@ export class PlanoCartesiano {
     this.calcularEscalaYOffset();
   }
 
-  // Calcula la escala para distribuir perfectamente en el canvas
   calcularEscalaYOffset() {
     const width = this.canvas.width;
     const height = this.canvas.height;
@@ -47,7 +45,7 @@ export class PlanoCartesiano {
   CoordenadasACanvas(x, y) {
     return {
       x: this.origen.x + (x * this.scale),
-      y: this.origen.y - (y * this.scale) // Invertir Y porque canvas Y va hacia abajo
+      y: this.origen.y - (y * this.scale) 
     };
   }
 
@@ -165,10 +163,7 @@ export class PlanoCartesiano {
       if(esMultiploDe10){
         this.ctx.moveTo(point.x, point.y - 8);
       this.ctx.lineTo(point.x, point.y + 8);
-      }/*else{
-        this.ctx.moveTo(point.x, point.y - 5);
-      this.ctx.lineTo(point.x, point.y + 5);
-      }*/
+      }
        this.ctx.stroke();
      
       // Número
@@ -190,10 +185,7 @@ export class PlanoCartesiano {
       if(esMultiploDe10){
         this.ctx.moveTo(point.x - 8, point.y);
         this.ctx.lineTo(point.x + 8, point.y);
-      }/*else{
-        this.ctx.moveTo(point.x - 5, point.y);
-        this.ctx.lineTo(point.x + 5, point.y);
-      }*/
+      }
       this.ctx.stroke();
       // Número
       if(esMultiploDe10){
@@ -210,11 +202,9 @@ export class PlanoCartesiano {
     this.ctx.font = '14px Arial';
     this.ctx.textAlign = 'center';
 
-    // Etiqueta eje X
     const xLabelPos = this.CoordenadasACanvas(this.config.maxX + 1, -0.5);
     this.ctx.fillText('X₁', xLabelPos.x, xLabelPos.y);
 
-    // Etiqueta eje Y
     const yLabelPos = this.CoordenadasACanvas(1, this.config.maxY + 1);
     this.ctx.textAlign = 'right';
     this.ctx.fillText('X₂', yLabelPos.x, yLabelPos.y);

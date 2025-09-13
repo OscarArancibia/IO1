@@ -23,12 +23,6 @@
       <button @click="redibujar" class="btn-redibujar">Redibujar</button>
     </div>
 
-    <!-- Información del estado actual -->
-   <!-- <div class="info-panel">
-      <h3>Información del Plano:</h3>
-      <p>• Rango X: {{ config.minX }} a {{ config.maxX }}</p>
-      <p>• Rango Y: {{ config.minY }} a {{ config.maxY }}</p>
-    </div>-->
   </div>
 </template>
 
@@ -36,101 +30,67 @@
 import { defineComponent, ref, onMounted } from 'vue';
 import { PlanoCartesiano } from '../../utils/graphs/PlanoCartesiano.js';
 import { Recta } from '../../utils/graphs/Recta.js';
+import { PuntoRegion } from '../../utils/graphs/PuntoRegion.js';
 
 export default defineComponent({
   name: 'OptimizationGraph',
   setup() {
     const canvas = ref(null);
     let plano = null;
+    let recta = null; // ← Declarar recta
+    let Region = null; // ← Declarar Region
     
-    // Configuración corregida - las rectas se inicializan correctamente
-    const rectasConfig = ref([
-      {
-        coeficienteX: 15,
-        coeficienteY: 0,
-        terminoIndependiente: 8100/7,
-        color: '#ff6b6b',
-        label: ''
-      },
-      {
-        coeficienteX: 1,
-        coeficienteY: 1,
-        terminoIndependiente: 60,
-        color: '#3498db', 
-        label: ''
-      },
-      {
-        coeficienteX: 2,
-        coeficienteY: 1,
-        terminoIndependiente: 100,
-        color: '#2ecc71',
-        label: ''
-      }
-    ]);
-    
-    const rectas = ref([]); // Array para almacenar las instancias de Recta
-    
-    const config = ref({//PARA EL PLANO
+    const config = ref({
       minX: 0,
-      maxX: 60,
+      maxX: 40,
       minY: 0,
-      maxY: 80,
+      maxY: 40,
       padding: 50
     });
 
     const inicializarPlano = () => {
       if (!canvas.value) return;
 
-      try {
-        // 1. Crear el plano
-        plano = new PlanoCartesiano(canvas.value, config.value);
+      try { 
+        plano = new PlanoCartesiano(canvas.value, config.value); 
+        plano.dibujarPlano();
         
-        // 2. Crear las rectas a partir de la configuración
-        rectas.value = rectasConfig.value.map(rectaConfig => 
-          new Recta(plano, rectaConfig)
-        );
-        
-        // 3. Dibujar todo
-        dibujarTodo();
+        recta = new Recta(plano, {
+          color: 'black',
+          grosor: 2,
+          puntos: [
+            { x: 10, y: 0 },  
+            { x: 0, y: 20 }, 
+            { x: 10, y: 0 },  
+            { x: 10, y: 40 }, 
+            { x: 0, y: 20 },  
+            { x: 40, y: 20 }, 
+          ]
+        });
+        recta.dibujar();
+       
+        Region = new PuntoRegion(plano, {
+          puntos: [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 0, y: 20 }
+          ],
+        }); 
+        Region.dibujar();
         
       } catch (error) {
         console.error('Error:', error);
       }
     };
 
-    const dibujarTodo = () => {
-      if (!plano) return;
-      
-      // 1. Dibujar el plano (fondo)
-      plano.dibujarPlano();
-      
-      // 2. Dibujar todas las rectas
-      rectas.value.forEach(recta => {
-        recta.dibujar();
-      });
-    };
-
-    const actualizarPlano = () => {
-      if (plano) {
-        // Actualizar la configuración del plano
-        plano.config = {...config.value};
-        dibujarTodo();
-      }
-    };
-
-    const redibujar = () => {
-      dibujarTodo();
-    };
-
     onMounted(() => {
+      console.log('Componente montado');
       setTimeout(inicializarPlano, 100);
     });
 
     return {
       canvas,
-      config,
-      redibujar,
-      actualizarPlano
+      config
     };
   }
 });

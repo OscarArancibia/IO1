@@ -1,4 +1,3 @@
-
 // Representa un punto en el plano 2D
 export interface Point {
   x: number;  // Coordenada X del punto
@@ -15,18 +14,13 @@ export interface PlanoConfig {
 }
 
 // Configuración para dibujar una recta (restricción)
-export interface RectaConfig {
-  coeficienteX: number;         
-  coeficienteY: number;          
-  terminoIndependiente: number; 
-  color?: string;                
-  label?: string;               
+export interface RectaConfig{
+  puntos: Point[];  
+   color?: string;   
+  grosor?: number;  
 }
 
 // Configuración para dibujar un punto en el gráfico
 export interface PuntoConfig {
-  x: number;      
-  y: number;      
-  label?: string; 
-  color?: string; 
+    puntos: Point[];    
 }
